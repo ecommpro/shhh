@@ -1,4 +1,4 @@
-# shhh
+# shhh 🤫
 
 Here's the code. That's all:
 
