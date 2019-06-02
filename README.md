@@ -3,11 +3,11 @@
 Here's the code. That's all:
 
     #!/bin/sh
-    [ -z "$VALUE" ] && [ ! -t 0 ] && VALUE=$(cat -)
-    : "${SHHH_ROOT:=$HOME/.shhh}" "${LENGTH:=24}" "${CHARS:=[A-Z][a-z][0-9]_\-\$:\!\(\)\.}" ${SHHH_FILE:=$SHHH_ROOT/$1.shhh}
-    CONTENT=${VALUE:-$(< /dev/urandom tr -dc $CHARS | head -c$LENGTH)}
-    [ -f $SHHH_FILE ] && [ -z "$RESET" ] || ( >&2 echo 🤫 $SHHH_FILE && umask 0077 && mkdir -p "${SHHH_FILE%/*}" && umask 0177 && printf '%s' "$CONTENT" > $SHHH_FILE )
-    [ -z "$VALUE" ] && cat $SHHH_FILE
+    [ -z "$SHHH_VALUE" ] && [ ! -t 0 ] && SHHH_VALUE=$(cat -)
+    : "${SHHH_ROOT:=$HOME/.shhh}" "${SHHH_LENGTH:=24}" "${SHHH_CHARS:=[A-Z][a-z][0-9]_\-\$:\!\(\)\.}" ${SHHH_FILE:=$SHHH_ROOT/$1.shhh}
+    SHHH_CONTENT=${SHHH_VALUE:-$(< /dev/urandom tr -dc $SHHH_CHARS | head -c$SHHH_LENGTH)}
+    [ -f $SHHH_FILE ] && [ -z "$SHHH_RESET" ] || ( >&2 echo 🤫 $SHHH_FILE && umask 0077 && mkdir -p "${SHHH_FILE%/*}" && umask 0177 && printf '%s' "$SHHH_CONTENT" > $SHHH_FILE )
+    [ -z "$SHHH_VALUE" ] && cat $SHHH_FILE
 
 Really? Do we need a GitHub repo for this? 🤷
 
@@ -22,40 +22,103 @@ Really? Do we need a GitHub repo for this? 🤷
 
     TO=/usr/local/bin && sudo sh -c "wget -O $TO/shhh https://raw.githubusercontent.com/ecommpro/shhh/master/shhh && chmod +x $TO/shhh"
 
+# Configuration
+
+Default directory for storing the credentials is `~/.shhh`. You can override this value by setting the variable `$SHHH_ROOT`.
+
+Other variables used by the script:
+
+`SHHH_CHARS`: set of characters used to create the password.
+
+`SHHH_LENGTH`: passord length.
+
+`SHHH_RESET`: ignore the current value and force the creation of a new password.
+
+`SHHH_VALUE`: force a value for the password. `SHHH_VALUE=abc shhh redis/dummy-password`.
+
 
 # Use
 
-    ➜  shhh-playground shhh mysq/project1
+    ➜  shhh mysq/project1
     🤫 /home/manel/.shhh/mysq/project1.shhh
     R1FPZ)T514Ud3NE9Mq:jJJzz
 
-    ➜  shhh-playground shhh mysq/project1
+    ➜  shhh mysq/project1
     R1FPZ)T514Ud3NE9Mq:jJJzz
     
-    ➜  shhh-playground shhh mysq/project2
+    ➜  shhh mysq/project2
     🤫 /home/manel/.shhh/mysq/project2.shhh
     aNqL6d[-1rA][okW$UmNv!qe
     
-    ➜  shhh-playground shhh mysq/project2
+    ➜  shhh mysq/project2
     aNqL6d[-1rA][okW$UmNv!qe
     
-    ➜  shhh-playground shhh some.service.that.requires.a.password
+    ➜  shhh some.service.that.requires.a.password
     🤫 /home/manel/.shhh/some.service.that.requires.a.password.shhh
     P3heq6zU)4swts[Wf9z.FXZe
     
-    ➜  shhh-playground shhh some.service.that.requires.a.password
+    ➜  shhh some.service.that.requires.a.password
     P3heq6zU)4swts[Wf9z.FXZe
     
-    ➜  shhh-playground RESET=1 shhh some.service.that.requires.a.password
+    ➜  SHHH_RESET=1 shhh some.service.that.requires.a.password
     🤫 /home/manel/.shhh/some.service.that.requires.a.password.shhh
     cDBFO6LD3x!3]T(7Vu$o:yw9
     
-    ➜  shhh-playground CHARS=abc LENGTH=9 shhh my/dummy/password
+    ➜  SHHH_CHARS=abc SHHH_LENGTH=9 shhh my/dummy/password
     🤫 /home/manel/.shhh/my/dummy/password.shhh
     acaccaabc
     
-    ➜  shhh-playground CHARS=abc LENGTH=9 shhh my/dummy/password
+    ➜  SHHH_CHARS=abc SHHH_LENGTH=9 shhh my/dummy/password
     acaccaabc
     
-    ➜  shhh-playground shhh my/dummy/password 
+    ➜  shhh my/dummy/password 
     acaccaabc
+
+    ➜  SHHH_VALUE=abc shhh redis/dummy-password
+    🤫 /home/manel/.shhh/redis/dummy-password.shhh
+    
+    ➜  shhh redis/dummy-password 
+    abc%                                                             
+
+
+# Dockerized
+
+We use this tool to create credentials for our dockerized Magento projects:
+
+    services:
+    
+        # ...
+
+        shhh:
+            image: ecommpro/shhh
+            volumes:
+                - shhh-data:/shhh
+            environment:
+                - SHHH_ROOT=/shhh
+                - "SECRETS=mysql:root mysql:user"
+
+        # ...
+
+        db:
+            # ...
+            volumes:
+                - shhh-data:/shhh
+            # ...
+
+        php-fpm:
+            # ...
+            volumes:
+                - shhh-data:/shhh
+            # ...
+
+        php-cli:
+            # ...
+            volumes:
+                - shhh-data:/shhh
+            # ...
+
+    volumes:
+        # ...
+        shhh-data:
+        # ...
+        
