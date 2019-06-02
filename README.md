@@ -104,6 +104,13 @@ We use this tool to create credentials for our dockerized Magento projects:
             volumes:
                 - shhh-data:/shhh
             # ...
+            
+            environment:
+                - MYSQL_DATABASE=app
+                - MYSQL_USER=app
+                - MYSQL_ROOT_PASSWORD_FILE=/shhh/mysql:root.shhh
+                - MYSQL_PASSWORD_FILE=/shhh/mysql:user.shhh
+                - "WAIT_FOR_FILES=/shhh/mysql:root.shhh /shhh/mysql:user.shhh"
 
         php-fpm:
             # ...
@@ -122,3 +129,28 @@ We use this tool to create credentials for our dockerized Magento projects:
         shhh-data:
         # ...
         
+
+That way we can make use of the password in a Magento 2 `app/etc/env.php` file without having to see, copy or paste the password.
+
+    <?php
+    return [
+        // ...
+        'db' => [
+            'table_prefix' => '',
+            'connection' => [
+                'default' => [
+                    'host' => 'db',
+                    'dbname' => 'app',
+                    'username' => 'app',
+                    'password' => file_get_contents('/shhh/mysql:user.shhh'),
+                    'model' => 'mysql4',
+                    'engine' => 'innodb',
+                    'initStatements' => 'SET NAMES utf8;',
+                    'active' => '1'
+                ]
+            ]
+        ],
+        // ...
+    ];
+
+
