@@ -1,6 +1,6 @@
 #!/bin/sh
 [ -z "$SHHH_VALUE" ] && [ ! -t 0 ] && SHHH_VALUE=$(cat -)
-: "${SHHH_ROOT:=$HOME/.shhh}" "${SHHH_LENGTH:=24}" "${SHHH_CHARS:=[A-Z][a-z][0-9]_\-\$:\!\(\)\.}" ${SHHH_FILE:=$SHHH_ROOT/$1.shhh}
+: "${SHHH_ROOT:=$HOME/.shhh}" "${SHHH_LENGTH:=24}" ${SHHH_CHARS:=A-Za-z0-9_\$:\!\(\)\.\-} ${SHHH_FILE:=$SHHH_ROOT/$1.shhh}
 SHHH_CONTENT=${SHHH_VALUE:-$(< /dev/urandom tr -dc $SHHH_CHARS | head -c$SHHH_LENGTH)}
 [ -f $SHHH_FILE ] && [ -z "$SHHH_RESET" ] || ( >&2 echo 🤫 $SHHH_FILE && umask 0077 && mkdir -p "${SHHH_FILE%/*}" && umask 0177 && printf '%s' "$SHHH_CONTENT" > $SHHH_FILE )
 [ -z "$SHHH_VALUE" ] && cat $SHHH_FILE
